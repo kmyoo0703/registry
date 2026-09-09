@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>KIMUN&amp;FUTABA</title>
+  <meta property="og:title" content="KIMUN&amp;FUTABA">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #ffffff;
+    }
+
+    body {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .initial-loader {
+      position: fixed;
+      inset: 0;
+      z-index: 20000;
+      background: #ffffff;
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+      transition: opacity 0.45s ease-in-out, visibility 0s linear 0.45s;
+    }
+
+    body.site-ready .initial-loader {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .card-inner {
+      position: relative;
+      width: min(100vw, calc(100dvh * 1463 / 2048), 1463px);
+      aspect-ratio: 1463 / 2048;
+      overflow: hidden;
+      background: #ffffff;
+    }
+
+    .layer {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: fill;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    @keyframes fadeIn {
+      0% { opacity: 0; }
+      100% { opacity: 1; }
+    }
+
+    @keyframes flyAndStop {
+      0% {
+        transform: translateX(120px) translateY(-20px);
+        opacity: 0;
+      }
+      100% {
+        transform: translateX(0) translateY(0);
+        opacity: 1;
+      }
+    }
+
+    @keyframes growTree {
+      0% {
+        transform: scale(0);
+        opacity: 0;
+      }
+      100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+
+    body.site-ready .background { z-index: 1; animation: fadeIn 1.3s ease-in-out 0s both; }
+    body.site-ready .bird       { z-index: 2; animation: flyAndStop 1.3s ease-in-out 1.3s both; }
+
+    body.site-ready .rabbit {
+      z-index: 3;
+      animation-name: fadeIn;
+      animation-duration: 1.3s;
+      animation-timing-function: ease-in-out;
+      animation-delay: var(--rabbit-delay);
+      animation-fill-mode: both;
+    }
+
+    .r1  { --rabbit-delay: 2.6s; }
+    .r2  { --rabbit-delay: 2.95s; }
+    .r3  { --rabbit-delay: 3.3s; }
+    .r4  { --rabbit-delay: 3.65s; }
+    .r5  { --rabbit-delay: 4s; }
+    .r6  { --rabbit-delay: 4.35s; }
+    .r7  { --rabbit-delay: 4.7s; }
+    .r8  { --rabbit-delay: 5.05s; }
+    .r9  { --rabbit-delay: 5.4s; }
+    .r10 { --rabbit-delay: 5.75s; }
+    .r11 { --rabbit-delay: 6.1s; }
+    .r12 { --rabbit-delay: 6.45s; }
+    .r13 { --rabbit-delay: 6.8s; }
+
+    .tree {
+      transform-origin: 20.06% 94%;
+    }
+
+    body.site-ready .tree     { z-index: 4; animation: growTree 1.3s ease-in-out 8.1s both; }
+    body.site-ready .title    { z-index: 5; animation: fadeIn 1.3s ease-in-out 9.4s both; }
+    body.site-ready .account1 { z-index: 6; animation: fadeIn 1.3s ease-in-out 10.7s both; }
+    body.site-ready .account2 { z-index: 7; animation: fadeIn 1.3s ease-in-out 12s both; }
+    body.site-ready .account3 { z-index: 8; animation: fadeIn 1.3s ease-in-out 13.3s both; }
+
+    .account-click-area {
+      position: absolute;
+      z-index: 20;
+      margin: 0;
+      padding: 0;
+      border: 0;
+      outline: 0;
+      background: transparent;
+      box-shadow: none;
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .account-kb {
+      left: 30.5537%;
+      top: 39.4043%;
+      width: 38.4826%;
+      height: 2.1484%;
+    }
+
+    .account-woori {
+      left: 30.9638%;
+      top: 54.6387%;
+      width: 37.7307%;
+      height: 2.1484%;
+    }
+
+    .account-hana {
+      left: 32.7410%;
+      top: 62.2559%;
+      width: 34.4498%;
+      height: 2.1973%;
+    }
+
+    .copy-toast {
+      position: fixed;
+      left: 50%;
+      bottom: max(30px, calc(env(safe-area-inset-bottom) + 18px));
+      z-index: 20000;
+      padding: 10px 17px;
+      border-radius: 999px;
+      color: #ffffff;
+      background: rgba(0, 0, 0, 0.58);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.14);
+      font-family: "Apple SD Gothic Neo", sans-serif;
+      font-size: 14px;
+      letter-spacing: -0.02em;
+      white-space: nowrap;
+      pointer-events: none;
+      opacity: 0;
+      transform: translate(-50%, 8px);
+    }
+
+    .copy-toast.show {
+      animation: copyToastFade 1.55s ease-in-out both;
+    }
+
+    @keyframes copyToastFade {
+      0% {
+        opacity: 0;
+        transform: translate(-50%, 8px);
+      }
+      18%, 70% {
+        opacity: 0.92;
+        transform: translate(-50%, 0);
+      }
+      100% {
+        opacity: 0;
+        transform: translate(-50%, -3px);
+      }
+    }
+
+    .bgm-btn {
+      position: fixed;
+      top: max(20px, env(safe-area-inset-top));
+      left: max(20px, env(safe-area-inset-left));
+      z-index: 1000;
+      width: 36px;
+      height: 36px;
+      border: 1px solid rgba(0, 0, 0, 0.1);
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.7);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .bgm-btn svg {
+      width: 18px;
+      height: 18px;
+      fill: #555555;
+    }
+  </style>
+</head>
+<body>
+  <div class="initial-loader" id="initialLoader" aria-hidden="true"></div>
+
+  <audio id="bgm" src="bgm.mp3" loop preload="auto"></audio>
+
+  <button class="bgm-btn" id="bgmBtn" type="button" aria-label="음악 켜기/끄기">
+    <svg id="musicIcon" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"></path>
+    </svg>
+  </button>
+
+  <main class="card-inner">
+    <img src="background.png" class="layer background" alt="">
+    <img src="bird.png" class="layer bird" alt="">
+    <img src="rabbit1.png" class="layer rabbit r1" alt="">
+    <img src="rabbit2.png" class="layer rabbit r2" alt="">
+    <img src="rabbit3.png" class="layer rabbit r3" alt="">
+    <img src="rabbit4.png" class="layer rabbit r4" alt="">
+    <img src="rabbit5.png" class="layer rabbit r5" alt="">
+    <img src="rabbit6.png" class="layer rabbit r6" alt="">
+    <img src="rabbit7.png" class="layer rabbit r7" alt="">
+    <img src="rabbit8.png" class="layer rabbit r8" alt="">
+    <img src="rabbit9.png" class="layer rabbit r9" alt="">
+    <img src="rabbit10.png" class="layer rabbit r10" alt="">
+    <img src="rabbit11.png" class="layer rabbit r11" alt="">
+    <img src="rabbit12.png" class="layer rabbit r12" alt="">
+    <img src="rabbit13.png" class="layer rabbit r13" alt="">
+    <img src="tree.png" class="layer tree" alt="">
+    <img src="title.png" class="layer title" alt="">
+    <img src="account1.png" class="layer account1" alt="">
+    <img src="account2.png" class="layer account2" alt="">
+    <img src="account3.png" class="layer account3" alt="">
+
+    <button class="account-click-area account-kb" type="button" data-account="27010204218011" aria-label="국민은행 계좌번호 복사"></button>
+    <button class="account-click-area account-woori" type="button" data-account="1002239470141" aria-label="우리은행 계좌번호 복사"></button>
+    <button class="account-click-area account-hana" type="button" data-account="29819040468" aria-label="하나은행 계좌번호 복사"></button>
+  </main>
+
+  <div class="copy-toast" id="copyToast" role="status" aria-live="polite">계좌번호가 복사되었습니다.</div>
+
+  <script>
+    let assetsReady = false;
+
+    function prepareAllImages() {
+      const jobs = Array.from(document.images).map((img) => {
+        if (img.complete) {
+          if (img.naturalWidth > 0 && typeof img.decode === 'function') {
+            return img.decode().catch(() => undefined);
+          }
+          return Promise.resolve();
+        }
+
+        return new Promise((resolve) => {
+          const finish = () => {
+            img.removeEventListener('load', finish);
+            img.removeEventListener('error', finish);
+
+            if (img.naturalWidth > 0 && typeof img.decode === 'function') {
+              img.decode().catch(() => undefined).finally(resolve);
+            } else {
+              resolve();
+            }
+          };
+
+          img.addEventListener('load', finish, { once: true });
+          img.addEventListener('error', finish, { once: true });
+        });
+      });
+
+      const maximumWait = new Promise((resolve) => {
+        window.setTimeout(resolve, 8000);
+      });
+
+      return Promise.race([Promise.all(jobs), maximumWait]);
+    }
+
+    function revealSite() {
+      if (assetsReady) return;
+      assetsReady = true;
+      window.requestAnimationFrame(() => {
+        document.body.classList.add('site-ready');
+      });
+    }
+
+    prepareAllImages().then(revealSite).catch(revealSite);
+
+    const bgm = document.getElementById('bgm');
+    const bgmBtn = document.getElementById('bgmBtn');
+    const musicIcon = document.getElementById('musicIcon');
+
+    const iconPlaying = '<path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"></path>';
+    const iconMuted = '<path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"></path>';
+
+    let isPlaying = false;
+
+    function playAudio() {
+      bgm.play().then(() => {
+        musicIcon.innerHTML = iconPlaying;
+        isPlaying = true;
+      }).catch((error) => {
+        console.log(error);
+      });
+    }
+
+    function toggleBgm() {
+      if (isPlaying) {
+        bgm.pause();
+        musicIcon.innerHTML = iconMuted;
+        isPlaying = false;
+      } else {
+        playAudio();
+      }
+    }
+
+    bgmBtn.addEventListener('click', (event) => {
+      event.stopPropagation();
+      toggleBgm();
+    });
+
+    function systemTouchFirst() {
+      if (!isPlaying) playAudio();
+      window.removeEventListener('click', systemTouchFirst);
+      window.removeEventListener('touchstart', systemTouchFirst);
+    }
+
+    window.addEventListener('click', systemTouchFirst);
+    window.addEventListener('touchstart', systemTouchFirst, { passive: true });
+
+    const copyToast = document.getElementById('copyToast');
+    let copyToastTimer = null;
+
+    function fallbackCopy(text) {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.setAttribute('readonly', '');
+      textarea.style.position = 'fixed';
+      textarea.style.left = '-9999px';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      textarea.setSelectionRange(0, text.length);
+      document.execCommand('copy');
+      textarea.remove();
+    }
+
+    async function copyAccountNumber(number) {
+      const digitsOnly = String(number).replace(/\D/g, '');
+
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(digitsOnly);
+        } else {
+          fallbackCopy(digitsOnly);
+        }
+
+        if (copyToastTimer) window.clearTimeout(copyToastTimer);
+        copyToast.classList.remove('show');
+        void copyToast.offsetWidth;
+        copyToast.classList.add('show');
+
+        copyToastTimer = window.setTimeout(() => {
+          copyToast.classList.remove('show');
+          copyToastTimer = null;
+        }, 1550);
+      } catch (error) {
+        console.log(error);
+      }
+    }
+
+    document.querySelectorAll('.account-click-area').forEach((button) => {
+      button.addEventListener('click', (event) => {
+        event.stopPropagation();
+        copyAccountNumber(button.dataset.account);
+      });
+    });
+  </script>
+</body>
+</html>
