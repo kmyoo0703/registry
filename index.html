@@ -63,6 +63,15 @@
       pointer-events: none;
     }
 
+    .flattened-layer {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+
     @keyframes fadeIn {
       0% { opacity: 0; }
       100% { opacity: 1; }
@@ -125,6 +134,11 @@
     body.site-ready .account1 { z-index: 6; animation: fadeIn 1.3s ease-in-out 10.7s both; }
     body.site-ready .account2 { z-index: 7; animation: fadeIn 1.3s ease-in-out 12s both; }
     body.site-ready .account3 { z-index: 8; animation: fadeIn 1.3s ease-in-out 13.3s both; }
+
+    /* 아직 차례가 오지 않은 대형 레이어는 GPU 애니메이션 대상으로 만들지 않는다. */
+    body.site-ready.animation-staged .layer {
+      animation: none;
+    }
 
     .account-click-area {
       position: absolute;
@@ -238,26 +252,27 @@
   </button>
 
   <main class="card-inner">
-    <img src="background.png" class="layer background" alt="">
-    <img src="bird.png" class="layer bird" alt="">
-    <img src="rabbit1.png" class="layer rabbit r1" alt="">
-    <img src="rabbit2.png" class="layer rabbit r2" alt="">
-    <img src="rabbit3.png" class="layer rabbit r3" alt="">
-    <img src="rabbit4.png" class="layer rabbit r4" alt="">
-    <img src="rabbit5.png" class="layer rabbit r5" alt="">
-    <img src="rabbit6.png" class="layer rabbit r6" alt="">
-    <img src="rabbit7.png" class="layer rabbit r7" alt="">
-    <img src="rabbit8.png" class="layer rabbit r8" alt="">
-    <img src="rabbit9.png" class="layer rabbit r9" alt="">
-    <img src="rabbit10.png" class="layer rabbit r10" alt="">
-    <img src="rabbit11.png" class="layer rabbit r11" alt="">
-    <img src="rabbit12.png" class="layer rabbit r12" alt="">
-    <img src="rabbit13.png" class="layer rabbit r13" alt="">
-    <img src="tree.png" class="layer tree" alt="">
-    <img src="title.png" class="layer title" alt="">
-    <img src="account1.png" class="layer account1" alt="">
-    <img src="account2.png" class="layer account2" alt="">
-    <img src="account3.png" class="layer account3" alt="">
+    <canvas class="flattened-layer" id="flattenedLayer" width="1463" height="2048" aria-hidden="true"></canvas>
+    <img data-src="background.png" class="layer background" alt="">
+    <img data-src="bird.png" class="layer bird" alt="">
+    <img data-src="rabbit1.png" class="layer rabbit r1" alt="">
+    <img data-src="rabbit2.png" class="layer rabbit r2" alt="">
+    <img data-src="rabbit3.png" class="layer rabbit r3" alt="">
+    <img data-src="rabbit4.png" class="layer rabbit r4" alt="">
+    <img data-src="rabbit5.png" class="layer rabbit r5" alt="">
+    <img data-src="rabbit6.png" class="layer rabbit r6" alt="">
+    <img data-src="rabbit7.png" class="layer rabbit r7" alt="">
+    <img data-src="rabbit8.png" class="layer rabbit r8" alt="">
+    <img data-src="rabbit9.png" class="layer rabbit r9" alt="">
+    <img data-src="rabbit10.png" class="layer rabbit r10" alt="">
+    <img data-src="rabbit11.png" class="layer rabbit r11" alt="">
+    <img data-src="rabbit12.png" class="layer rabbit r12" alt="">
+    <img data-src="rabbit13.png" class="layer rabbit r13" alt="">
+    <img data-src="tree.png" class="layer tree" alt="">
+    <img data-src="title.png" class="layer title" alt="">
+    <img data-src="account1.png" class="layer account1" alt="">
+    <img data-src="account2.png" class="layer account2" alt="">
+    <img data-src="account3.png" class="layer account3" alt="">
 
     <button class="account-click-area account-kb" type="button" data-account="27010204218011" aria-label="국민은행 계좌번호 복사"></button>
     <button class="account-click-area account-woori" type="button" data-account="1002239470141" aria-label="우리은행 계좌번호 복사"></button>
@@ -269,46 +284,118 @@
   <script>
     let assetsReady = false;
 
-    function prepareAllImages() {
-      const jobs = Array.from(document.images).map((img) => {
-        if (img.complete) {
+    function prepareImage(img) {
+      if (img.dataset.src && !img.getAttribute('src')) {
+        img.src = img.dataset.src;
+      }
+
+      return new Promise((resolve) => {
+        const decodeAndFinish = () => {
           if (img.naturalWidth > 0 && typeof img.decode === 'function') {
-            return img.decode().catch(() => undefined);
+            img.decode().catch(() => undefined).finally(resolve);
+          } else {
+            resolve();
           }
-          return Promise.resolve();
+        };
+
+        if (img.complete) {
+          decodeAndFinish();
+          return;
         }
 
-        return new Promise((resolve) => {
-          const finish = () => {
-            img.removeEventListener('load', finish);
-            img.removeEventListener('error', finish);
-
-            if (img.naturalWidth > 0 && typeof img.decode === 'function') {
-              img.decode().catch(() => undefined).finally(resolve);
-            } else {
-              resolve();
-            }
-          };
-
-          img.addEventListener('load', finish, { once: true });
-          img.addEventListener('error', finish, { once: true });
-        });
+        img.addEventListener('load', decodeAndFinish, { once: true });
+        img.addEventListener('error', resolve, { once: true });
       });
+    }
 
-      const maximumWait = new Promise((resolve) => {
-        window.setTimeout(resolve, 8000);
-      });
-
-      return Promise.race([Promise.all(jobs), maximumWait]);
+    async function prepareAllImages() {
+      // 대형 PNG를 동시에 디코딩하지 않고 한 장씩 준비한다.
+      for (const img of Array.from(document.images)) {
+        await prepareImage(img);
+      }
     }
 
     function revealSite() {
       if (assetsReady) return;
       assetsReady = true;
       window.requestAnimationFrame(() => {
+        document.body.classList.add('animation-staged');
         document.body.classList.add('site-ready');
+        startStagedAnimations();
       });
     }
+
+    function startStagedAnimations() {
+      const animationPlan = [
+        ['.background', 'fadeIn', 0],
+        ['.bird', 'flyAndStop', 1300],
+        ['.r1', 'fadeIn', 2600],
+        ['.r2', 'fadeIn', 2950],
+        ['.r3', 'fadeIn', 3300],
+        ['.r4', 'fadeIn', 3650],
+        ['.r5', 'fadeIn', 4000],
+        ['.r6', 'fadeIn', 4350],
+        ['.r7', 'fadeIn', 4700],
+        ['.r8', 'fadeIn', 5050],
+        ['.r9', 'fadeIn', 5400],
+        ['.r10', 'fadeIn', 5750],
+        ['.r11', 'fadeIn', 6100],
+        ['.r12', 'fadeIn', 6450],
+        ['.r13', 'fadeIn', 6800],
+        ['.tree', 'growTree', 8100],
+        ['.title', 'fadeIn', 9400],
+        ['.account1', 'fadeIn', 10700],
+        ['.account2', 'fadeIn', 12000],
+        ['.account3', 'fadeIn', 13300]
+      ];
+
+      animationPlan.forEach(([selector, animationName, delay]) => {
+        const layer = document.querySelector(selector);
+        if (!layer) return;
+
+        const run = () => {
+          layer.style.animation = animationName + ' 1.3s ease-in-out 0s both';
+        };
+
+        if (delay === 0) {
+          run();
+        } else {
+          window.setTimeout(run, delay);
+        }
+      });
+    }
+
+    const flattenedLayer = document.getElementById('flattenedLayer');
+    const flattenedContext = flattenedLayer.getContext('2d', { alpha: true });
+
+    function flattenFinishedLayer(event) {
+      const img = event.currentTarget;
+
+      if (
+        !flattenedContext ||
+        img.dataset.flattened === 'true' ||
+        img.naturalWidth === 0
+      ) {
+        return;
+      }
+
+      img.dataset.flattened = 'true';
+      flattenedContext.drawImage(
+        img,
+        0,
+        0,
+        flattenedLayer.width,
+        flattenedLayer.height
+      );
+
+      // 완성된 모습은 canvas에 유지하고 개별 대형 PNG 메모리는 해제한다.
+      img.style.display = 'none';
+      img.removeAttribute('src');
+    }
+
+    document.querySelectorAll('.layer').forEach((img) => {
+      img.addEventListener('animationend', flattenFinishedLayer, { once: true });
+    });
 
     prepareAllImages().then(revealSite).catch(revealSite);
 
